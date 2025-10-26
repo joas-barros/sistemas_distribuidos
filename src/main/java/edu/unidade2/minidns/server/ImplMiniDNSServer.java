@@ -39,8 +39,8 @@ public class ImplMiniDNSServer {
 
                 if(request.startsWith("UPDATE:")){
                     String[] parts = request.split(":");
-                    dnsMap.put(parts[0], parts[1]);
-                    response = parts[0] + " atualizado com sucesso para " + parts[1];
+                    dnsMap.put(parts[1], parts[2]);
+                    response = parts[1] + " atualizado com sucesso para " + parts[2];
                 } else if (request.startsWith("GET")) {
                     String serverName = request.split(":")[1];
                     response = dnsMap.getOrDefault(serverName, "Servidor não encontrado");

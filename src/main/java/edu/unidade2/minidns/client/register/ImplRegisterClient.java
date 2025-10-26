@@ -3,11 +3,15 @@ package edu.unidade2.minidns.client.register;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.Scanner;
 
 public class ImplRegisterClient {
     DatagramSocket socketCliente = null;
+    InetAddress adress;
     Scanner sc = new Scanner(System.in);
+    private final String SERVER_HOST = "localhost";
+    private final int SERVER_PORT = 12345;
 
     public ImplRegisterClient() {
         this.run();
@@ -17,7 +21,12 @@ public class ImplRegisterClient {
         int choice;
         try{
             socketCliente = new DatagramSocket();
-            System.out.println("Cliente de Registro MiniDNS iniciado.");
+            adress = InetAddress.getByName(SERVER_HOST);
+
+            System.out.println("Cliente de Registrador MiniDNS iniciado em: " +
+                    InetAddress.getLocalHost() + ":" +
+                    socketCliente.getLocalPort());
+
 
             boolean running = true;
             while (running) {
@@ -26,6 +35,7 @@ public class ImplRegisterClient {
                 System.out.println("[0] - Sair");
                 System.out.print("Escolha uma opção: ");
                 choice = sc.nextInt();
+                sc.nextLine(); // Consumir a nova linha após nextInt()
 
                 switch (choice) {
                     case 1:
@@ -37,14 +47,15 @@ public class ImplRegisterClient {
                         continue;
                     default:
                         System.out.println("Opção inválida. Tente novamente.");
-                        continue;
                 }
-
 
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            sc.close();
+            socketCliente.close();
         }
     }
 
@@ -59,7 +70,7 @@ public class ImplRegisterClient {
 
         // Enviar a mensagem de registro para o servidor MiniDNS
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
-                java.net.InetAddress.getByName("localhost"), 12345);
+                adress, SERVER_PORT);
         socketCliente.send(sendPacket);
         System.out.println("Mensagem de registro enviada: " + registrationMessage);
 
