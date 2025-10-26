@@ -54,6 +54,10 @@ public class ImplMiniDNSServer {
             // Here you would add the logic to handle incoming DNS requests
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
         }
     }
 
