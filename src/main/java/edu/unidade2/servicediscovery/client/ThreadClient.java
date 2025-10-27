@@ -81,7 +81,6 @@ public class ThreadClient implements Runnable{
 
             if (operation == Operation.NOT_VALID) {
                 System.out.println("Operação inválida. Encerrando o programa.");
-                calcSocket.close();
                 return;
             }
 
