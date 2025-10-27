@@ -1,4 +1,4 @@
-package edu.unidade2.overleay.entities;
+package edu.unidade2.servicediscovery.entities;
 
 import java.io.Serializable;
 
