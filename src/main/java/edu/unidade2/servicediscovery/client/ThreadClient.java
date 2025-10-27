@@ -96,12 +96,14 @@ public class ThreadClient implements Runnable{
             outObject.writeObject(calculation);
             outObject.flush();
 
+            in = new BufferedReader(new InputStreamReader(calcSocket.getInputStream()));
+
             recievedMessage = in.readLine();
             System.out.println("Resultado recebido do servidor de cálculos: " + recievedMessage);
 
             System.out.println("Encerrando conexão com o servidor de cálculos...");
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Erro de I/O: " + e.getMessage());
         } finally {
             try {
                 if (calcSocket != null && !calcSocket.isClosed()) {

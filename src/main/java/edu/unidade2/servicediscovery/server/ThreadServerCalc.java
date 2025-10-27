@@ -27,7 +27,7 @@ public class ThreadServerCalc implements Runnable{
 
             out = new PrintStream(client.getOutputStream());
             out.println(result);
-            System.out.println("Resultado enviado ao cliente.");
+            System.out.println("mensagem enviada ao cliente: " + result);
 
         } catch (Exception e) {
             e.printStackTrace();
