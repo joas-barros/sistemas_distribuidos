@@ -21,6 +21,7 @@ public class ThreadServerCalc implements Runnable{
         try {
             entrada = new ObjectInputStream(client.getInputStream());
             Calculation calc = (Calculation) entrada.readObject();
+            System.out.println("Cliente " + calc.getClientId() + " conectado. pelo endereço: " + client.getInetAddress().getHostAddress());
             System.out.println("Cálculo recebido: " + calc.getOperation() + " " + calc.getArg1() + " " + calc.getArg2());
 
             String result = hancleCalculation(calc);

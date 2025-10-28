@@ -11,7 +11,11 @@ public class DirectoryServer {
 
     private static AtomicInteger counter = new AtomicInteger(0);
 
-    private static final int BASE_PORT = 5000;
+    private AtomicInteger clientCounter = new AtomicInteger(0);
+
+    public static final int BASE_PORT = 5000;
+
+
 
     public DirectoryServer() {
         this.run();
@@ -26,7 +30,7 @@ public class DirectoryServer {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Nova conexão recebida de: " + clientSocket.getInetAddress().getHostAddress());
 
-                ThreadDirectory handler = new ThreadDirectory(clientSocket, serverPorts, counter);
+                ThreadDirectory handler = new ThreadDirectory(clientSocket, serverPorts, counter, clientCounter);
                 new Thread(handler).start();
             }
         } catch (Exception e) {

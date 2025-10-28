@@ -8,11 +8,13 @@ public class Calculation implements Serializable {
     private Operation operation;
     private Double arg1;
     private Double arg2;
+    private int clientId;
 
-    public Calculation(Operation operation, Double arg1, Double arg2) {
+    public Calculation(Operation operation, Double arg1, Double arg2, int clientId) {
         this.operation = operation;
         this.arg1 = arg1;
         this.arg2 = arg2;
+        this.clientId = clientId;
     }
 
     public Operation getOperation() {
@@ -25,5 +27,9 @@ public class Calculation implements Serializable {
 
     public Double getArg2() {
         return arg2;
+    }
+
+    public int getClientId() {
+        return clientId;
     }
 }

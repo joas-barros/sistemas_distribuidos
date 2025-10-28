@@ -12,11 +12,13 @@ public class ThreadDirectory implements Runnable {
     private Socket clientSocket;
     private List<Integer> serverPorts;
     private AtomicInteger counter;
+    private  AtomicInteger clientCounter;
 
-    public ThreadDirectory(Socket clientSocket, List<Integer> serverPorts, AtomicInteger counter) {
+    public ThreadDirectory(Socket clientSocket, List<Integer> serverPorts, AtomicInteger counter, AtomicInteger clientCounter) {
         this.clientSocket = clientSocket;
         this.serverPorts = serverPorts;
         this.counter = counter;
+        this.clientCounter = clientCounter;
     }
 
     @Override
@@ -48,10 +50,14 @@ public class ThreadDirectory implements Runnable {
                     out.println("NO SERVERS AVAILABLE");
                     System.out.println("Nenhum servidor disponível para fornecer a porta.");
                 } else {
+
+                    int clienteId = clientCounter.incrementAndGet();
+                    String clienteNome = "Cliente " + clienteId;
+
                     int index = counter.getAndIncrement() % serverPorts.size();
                     int port = serverPorts.get(index);
-                    out.println("PORT " + port);
-                    System.out.println("Cliente [ " + clientSocket.getInetAddress().getHostAddress() +
+                    out.println("PORT " + port + " ID " + clienteId);
+                    System.out.println(clienteNome + " [ " + clientSocket.getInetAddress().getHostAddress() +
                             " ] foi direcionado para a porta: " + port);
                 }
             } else {

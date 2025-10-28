@@ -42,7 +42,10 @@ public class ThreadClient implements Runnable{
 
             int port = Integer.parseInt(recievedMessage.split(" ")[1]);
 
+            int id = Integer.parseInt(recievedMessage.split(" ")[3]);
+
             System.out.println("Porta recebida: " + port);
+            System.out.println("Seu ID de cliente é: " + id);
 
             System.out.println("Encerrando conexao com o servidor diretorio...");
             client.close();
@@ -91,7 +94,7 @@ public class ThreadClient implements Runnable{
             double arg2 = keyboard.nextDouble();
             keyboard.nextLine();
 
-            Calculation calculation = new Calculation(operation, arg1, arg2);
+            Calculation calculation = new Calculation(operation, arg1, arg2, id);
             outObject = new ObjectOutputStream(calcSocket.getOutputStream());
             outObject.writeObject(calculation);
             outObject.flush();

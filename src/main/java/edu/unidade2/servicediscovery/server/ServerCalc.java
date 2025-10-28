@@ -1,5 +1,7 @@
 package edu.unidade2.servicediscovery.server;
 
+import edu.unidade2.servicediscovery.server.proxy.DirectoryServer;
+
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,7 +22,7 @@ public class ServerCalc {
             serverSocket = new ServerSocket(porta);
             System.out.println("Servidor de calculo rodando na porta: " + porta);
 
-            Socket directorySocket = new Socket("localhost", 5000);
+            Socket directorySocket = new Socket("localhost", DirectoryServer.BASE_PORT);
             System.out.println("Conectado ao servidor diretorio para registro de porta.");
 
             PrintStream out = new PrintStream(directorySocket.getOutputStream());
