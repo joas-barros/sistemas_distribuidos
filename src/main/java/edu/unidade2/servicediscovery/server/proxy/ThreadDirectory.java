@@ -11,6 +11,8 @@ public class ThreadDirectory implements Runnable {
 
     private Socket clientSocket;
     private List<Integer> serverPorts;
+
+    // Thread safe
     private AtomicInteger counter;
     private  AtomicInteger clientCounter;
 
