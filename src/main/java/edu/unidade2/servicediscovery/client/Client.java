@@ -14,10 +14,10 @@ public class Client {
     public Client(String ip, int porta) {
         this.ip = ip;
         this.porta = porta;
-        this.rodar();
+        this.run();
     }
 
-    private void rodar() {
+    private void run() {
         try {
             inet = InetAddress.getByName(ip);
             socket = new Socket(inet, porta);
