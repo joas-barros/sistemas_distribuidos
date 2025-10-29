@@ -10,11 +10,11 @@ public class Node {
     int id;
     int port;
     int successorPort;
-    int previousPort;
-    int initialFile;
+    Integer previousPort;
+    Integer initialFile;
     int lastFile;
 
-    public Node(int id, int port, int successorPort, int previousPort, int initialFile, int lastFile) {
+    public Node(int id, int port, int successorPort, Integer previousPort, int initialFile, int lastFile) {
         this.id = id;
         this.port = port;
         this.successorPort = successorPort;
@@ -60,7 +60,7 @@ public class Node {
     private List<String> generateFiles() {
         List<String> files = new ArrayList<>();
         for (int i = initialFile; i <= lastFile; i++) {
-            files.add("Arquivo" + i);
+            files.add("arquivo" + i);
         }
         return files;
     }
