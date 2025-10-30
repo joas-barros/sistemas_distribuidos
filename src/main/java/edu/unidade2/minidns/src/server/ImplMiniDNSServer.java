@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.server;
+package edu.unidade2.minidns.src.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -39,8 +39,17 @@ public class ImplMiniDNSServer {
 
                 if(request.startsWith("UPDATE:")){
                     String[] parts = request.split(":");
-                    dnsMap.put(parts[1], parts[2]);
-                    response = parts[1] + " atualizado com sucesso para " + parts[2];
+
+                    String serverName = parts[1];
+                    String newIp = parts[2];
+
+                    if(!dnsMap.containsKey(serverName)){
+                        response = "Servidor não encontrado para atualização";
+                    } else {
+                        dnsMap.put(serverName, newIp);
+                        response = "Endereço IP do " + serverName + " atualizado para " + newIp;
+                    }
+
                 } else if (request.startsWith("GET")) {
                     String serverName = request.split(":")[1];
                     response = dnsMap.getOrDefault(serverName, "Servidor não encontrado");
@@ -51,7 +60,7 @@ public class ImplMiniDNSServer {
                 serverSocket.send(sendPacket);
                 System.out.println("RESPOSTA ENVIADA: [" + response + "]" );
             }
-            // Here you would add the logic to handle incoming DNS requests
+
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

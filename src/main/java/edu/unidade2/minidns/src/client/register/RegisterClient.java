@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.client.register;
+package edu.unidade2.minidns.src.client.register;
 
 public class RegisterClient {
     static void main() {

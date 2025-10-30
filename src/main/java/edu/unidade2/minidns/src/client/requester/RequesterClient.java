@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.client.requester;
+package edu.unidade2.minidns.src.client.requester;
 
 public class RequesterClient {
     static void main() {

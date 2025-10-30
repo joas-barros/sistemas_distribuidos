@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.server;
+package edu.unidade2.minidns.src.server;
 
 public class MiniDNSServer {
     static void main() {

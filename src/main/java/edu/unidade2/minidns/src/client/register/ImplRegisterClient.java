@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.client.register;
+package edu.unidade2.minidns.src.client.register;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -34,8 +34,14 @@ public class ImplRegisterClient {
                 System.out.println("[1] - Atualizar o endereço IP de um servidor");
                 System.out.println("[0] - Sair");
                 System.out.print("Escolha uma opção: ");
-                choice = sc.nextInt();
-                sc.nextLine(); // Consumir a nova linha após nextInt()
+                String line = sc.nextLine();
+
+                try {
+                    choice = Integer.parseInt(line);
+                } catch (NumberFormatException e) {
+                    System.out.println("Entrada inválida. Por favor, insira um número.");
+                    continue;
+                }
 
                 switch (choice) {
                     case 1:
