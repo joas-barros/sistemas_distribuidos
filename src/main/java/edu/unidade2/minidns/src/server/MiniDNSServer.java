@@ -1,4 +1,4 @@
-package edu.unidade2.minidns.server;
+package edu.unidade2.minidns.src.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -6,12 +6,12 @@ import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ImplMiniDNSServer {
+public class MiniDNSServer {
     DatagramSocket serverSocket;
     private InetAddress host;
     private int port;
 
-    public ImplMiniDNSServer(int port) {
+    public MiniDNSServer(int port) {
         this.port = port;
         this.run(port);
     }
@@ -22,14 +22,17 @@ public class ImplMiniDNSServer {
         try (DatagramSocket serverSocket = new DatagramSocket(port)) {
             host = InetAddress.getLocalHost();
             System.out.println("Servidor MiniDNS está rodando no endereço: " + host + ":" + port);
+            // Inicializa o mapa DNS com servidores e seus IPs
             initServer();
 
             while (true) {
                 byte[] receiveBuffer = new byte[1024];
 
+                // Recebe o pacote do cliente
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 serverSocket.receive(receivePacket);
 
+                // Processa a requisição
                 String request = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
@@ -37,23 +40,34 @@ public class ImplMiniDNSServer {
 
                 String response = "";
 
+                // Verifica o tipo de requisição
                 if(request.startsWith("UPDATE:")){
                     String[] parts = request.split(":");
-                    dnsMap.put(parts[1], parts[2]);
-                    response = parts[1] + " atualizado com sucesso para " + parts[2];
+
+                    String serverName = parts[1];
+                    String newIp = parts[2];
+
+                    if(!dnsMap.containsKey(serverName)){
+                        response = "Servidor não encontrado para atualização";
+                    } else {
+                        dnsMap.put(serverName, newIp);
+                        response = "Endereço IP do " + serverName + " atualizado para " + newIp;
+                    }
+
                 } else if (request.startsWith("GET")) {
                     String serverName = request.split(":")[1];
                     response = dnsMap.getOrDefault(serverName, "Servidor não encontrado");
                 }
 
+                // Envia a resposta de volta ao cliente
                 byte[] sendBuffer = response.getBytes();
                 DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
                 serverSocket.send(sendPacket);
                 System.out.println("RESPOSTA ENVIADA: [" + response + "]" );
             }
-            // Here you would add the logic to handle incoming DNS requests
+
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro no servidor MiniDNS: " + e.getMessage());
         } finally {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();

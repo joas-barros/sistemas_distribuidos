@@ -1,6 +1,6 @@
-package edu.unidade2.servicediscovery.server;
+package edu.unidade2.servicediscovery.src.server;
 
-import edu.unidade2.servicediscovery.entities.Calculation;
+import edu.unidade2.servicediscovery.src.entities.Calculation;
 
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
@@ -19,26 +19,31 @@ public class ThreadServerCalc implements Runnable{
     @Override
     public void run() {
         try {
+            // recebe o objeto Calculation do cliente
             entrada = new ObjectInputStream(client.getInputStream());
             Calculation calc = (Calculation) entrada.readObject();
+
+            // exibe as informações do cálculo recebido
             System.out.println("Cliente " + calc.getClientId() + " conectado. pelo endereço: " + client.getInetAddress().getHostAddress());
             System.out.println("Cálculo recebido: " + calc.getOperation() + " " + calc.getArg1() + " " + calc.getArg2());
 
+            // realiza o cálculo e obtém o resultado
             String result = hancleCalculation(calc);
 
+            // envia o resultado de volta ao cliente
             out = new PrintStream(client.getOutputStream());
             out.println(result);
             System.out.println("mensagem enviada ao cliente: " + result);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro na thread do servidor de calculo: " + e.getMessage());
         } finally {
             try {
                 if (entrada != null) entrada.close();
                 if (out != null) out.close();
                 if (client != null) client.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println("Erro ao fechar recursos na thread do servidor de calculo: " + e.getMessage());
             }
         }
     }

@@ -1,4 +1,4 @@
-package edu.unidade2.servicediscovery.server.proxy;
+package edu.unidade2.servicediscovery.src.server.proxy;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -23,18 +23,21 @@ public class DirectoryServer {
 
     private void run() {
         try {
+            // Cria o socket do servidor na porta BASE_PORT
             ServerSocket serverSocket = new ServerSocket(BASE_PORT);
 
             System.out.println("Servidor de diretório rodando na porta: " + BASE_PORT);
             while (true) {
+                // Aguarda por conexões de clientes
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Nova conexão recebida de: " + clientSocket.getInetAddress().getHostAddress());
 
+                // Cria uma nova thread para lidar com o cliente
                 ThreadDirectory handler = new ThreadDirectory(clientSocket, serverPorts, counter, clientCounter);
                 new Thread(handler).start();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro no servidor de diretório: " + e.getMessage());
         }
     }
 
