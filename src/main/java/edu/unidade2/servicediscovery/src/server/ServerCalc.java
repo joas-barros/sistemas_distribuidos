@@ -3,6 +3,7 @@ package edu.unidade2.servicediscovery.src.server;
 import edu.unidade2.servicediscovery.src.server.proxy.DirectoryServer;
 
 import java.io.PrintStream;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -41,8 +42,11 @@ public class ServerCalc {
                 Thread thread = new Thread(threadServerCalc);
                 thread.start();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ConnectException e) {
+            System.err.println(e.getMessage());
+        }
+        catch (Exception e) {
+            System.err.println("Erro no servidor de calculo: " + e.getMessage());
         }
     }
 

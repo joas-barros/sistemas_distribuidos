@@ -28,7 +28,7 @@ public class Client {
             Thread thread = new Thread(threadClient);
             thread.start();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 }

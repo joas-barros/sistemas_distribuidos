@@ -67,7 +67,7 @@ public class ThreadDirectory implements Runnable {
                 System.out.println("Requisição inválida recebida: " + request);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 }

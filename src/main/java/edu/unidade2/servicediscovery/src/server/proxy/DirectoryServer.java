@@ -34,7 +34,7 @@ public class DirectoryServer {
                 new Thread(handler).start();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro no servidor de diretório: " + e.getMessage());
         }
     }
 

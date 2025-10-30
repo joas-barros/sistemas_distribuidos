@@ -106,14 +106,14 @@ public class ThreadClient implements Runnable{
 
             System.out.println("Encerrando conexão com o servidor de cálculos...");
         } catch (IOException e) {
-            System.out.println("Erro de I/O: " + e.getMessage());
+            System.err.println("Erro de I/O: " + e.getMessage());
         } finally {
             try {
                 if (calcSocket != null && !calcSocket.isClosed()) {
                     calcSocket.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("Erro ao fechar o socket de cálculo: " + e.getMessage());
             } finally {
                 keyboard.close();
             }

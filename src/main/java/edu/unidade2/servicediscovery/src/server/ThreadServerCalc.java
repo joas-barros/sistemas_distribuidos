@@ -31,14 +31,14 @@ public class ThreadServerCalc implements Runnable{
             System.out.println("mensagem enviada ao cliente: " + result);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro na thread do servidor de calculo: " + e.getMessage());
         } finally {
             try {
                 if (entrada != null) entrada.close();
                 if (out != null) out.close();
                 if (client != null) client.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println("Erro ao fechar recursos na thread do servidor de calculo: " + e.getMessage());
             }
         }
     }
