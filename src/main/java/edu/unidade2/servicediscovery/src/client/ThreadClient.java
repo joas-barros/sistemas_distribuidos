@@ -40,6 +40,11 @@ public class ThreadClient implements Runnable{
             String recievedMessage = in.readLine();
             System.out.println("Mensagem recebida do servidor diretorio: " + recievedMessage);
 
+            if(recievedMessage.equals("NO SERVERS AVAILABLE")){
+                System.err.println("Nenhum servidor de cálculo disponível. Encerrando o programa.");
+                return;
+            }
+
             int port = Integer.parseInt(recievedMessage.split(" ")[1]);
 
             int id = Integer.parseInt(recievedMessage.split(" ")[3]);
@@ -83,7 +88,7 @@ public class ThreadClient implements Runnable{
             }
 
             if (operation == Operation.NOT_VALID) {
-                System.out.println("Operação inválida. Encerrando o programa.");
+                System.err.println("Operação inválida. Encerrando o programa.");
                 return;
             }
 
