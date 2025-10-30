@@ -46,6 +46,7 @@ public class Node {
             String input = keyboard.nextLine();
             if (input.equalsIgnoreCase("sair")) {
                 System.out.println("Encerrando processo P" + id + "...");
+                process.shutdown();
                 exit = true;
             } else if (input.trim().isEmpty() || !input.startsWith("arquivo")){
                 System.out.println("Nome de arquivo inválido. Tente novamente.");

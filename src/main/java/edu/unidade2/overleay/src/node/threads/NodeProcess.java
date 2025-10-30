@@ -6,6 +6,7 @@ import edu.unidade2.overleay.src.message.MessageType;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,8 @@ public class NodeProcess implements Runnable {
     List<String> files;
 
     List<String> logMessages = Collections.synchronizedList(new ArrayList<>());
+
+    private ServerSocket serverSocket;
 
     public NodeProcess(int id, int port, int previousNodePort, int successorNodePort, List<String> files) {
         this.id = id;
@@ -66,7 +69,7 @@ public class NodeProcess implements Runnable {
             out.writeObject(message);
             out.flush();
         } catch (Exception e) {
-            log("Erro ao enviar mensagem para P" + (this.id + 1) % 6 + ": " + e.getMessage());
+            log("Erro ao enviar mensagem para processo na porta " + this.successorNodePort + ": " + e.getMessage());
         }
     }
 
@@ -75,6 +78,12 @@ public class NodeProcess implements Runnable {
 
         switch (message.getType()) {
             case SEARCH:
+
+                if(message.getOriginNodeId().equals(this.id)) {
+                    log("Busca retornou ao nó de origem P" + this.id + ". Arquivo '" + message.getPayload() + "' não encontrado na rede.");
+                    return;
+                }
+
                 String fileName = message.getPayload();
                 if (isResponsable(fileName)) {
                     log("Arquivo '" + fileName + "' encontrado localmente. Enviando resposta.");
@@ -104,20 +113,34 @@ public class NodeProcess implements Runnable {
 
     }
 
+    public void shutdown() {
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        } catch (Exception e) {
+            log("Erro ao fechar o socket do servidor: " + e.getMessage());
+        }
+    }
+
     @Override
     public void run() {
         log("Servidor do nó iniciado na porta " + port);
-        try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+        try {
+
+            serverSocket = new ServerSocket(this.port);
+
             while (true) {
                 // Bloqueia até que uma nova conexão (mensagem) chegue
                 Socket clientSocket = serverSocket.accept();
-
                 // Cria um 'Worker' para lidar com a mensagem em uma nova Thread
                 // Isso atende ao requisito 'multithread' do servidor
                 NodeWorker worker = new NodeWorker(clientSocket, this);
                 new Thread(worker).start();
             }
-        } catch (Exception e) {
+        } catch (SocketException e) {
+            log("Servidor encerrado.");
+        }catch (Exception e) {
             log("Erro crítico no servidor do nó: " + e.getMessage());
         }
     }
