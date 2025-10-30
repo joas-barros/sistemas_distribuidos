@@ -23,13 +23,16 @@ public class DirectoryServer {
 
     private void run() {
         try {
+            // Cria o socket do servidor na porta BASE_PORT
             ServerSocket serverSocket = new ServerSocket(BASE_PORT);
 
             System.out.println("Servidor de diretório rodando na porta: " + BASE_PORT);
             while (true) {
+                // Aguarda por conexões de clientes
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Nova conexão recebida de: " + clientSocket.getInetAddress().getHostAddress());
 
+                // Cria uma nova thread para lidar com o cliente
                 ThreadDirectory handler = new ThreadDirectory(clientSocket, serverPorts, counter, clientCounter);
                 new Thread(handler).start();
             }

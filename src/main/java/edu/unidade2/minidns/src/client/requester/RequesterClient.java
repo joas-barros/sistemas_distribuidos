@@ -62,17 +62,21 @@ public class RequesterClient {
     }
 
     private void handleServerRequest() throws IOException {
+        // Solicitar o nome do servidor ao usuário
         System.out.println("Digite o nome do servidor a ser consultado: ");
         String serverName = sc.nextLine();
 
+        // Construir a mensagem de consulta
         String message = "GET:" + serverName;
         byte[] sendData = message.getBytes();
 
+        // Enviar a mensagem ao servidor
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
                 adress, SERVER_PORT);
         socketCliente.send(sendPacket);
         System.out.println("Mensagem de consulta enviada: " + message);
 
+        // Receber a resposta do servidor
         byte[] receiveData = new byte[1024];
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
         socketCliente.receive(receivePacket);

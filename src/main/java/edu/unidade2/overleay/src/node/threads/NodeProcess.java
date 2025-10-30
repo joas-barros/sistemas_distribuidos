@@ -19,6 +19,7 @@ public class NodeProcess implements Runnable {
     int successorNodePort;
     List<String> files;
 
+    // Usado para armazenar logs de forma thread-safe
     List<String> logMessages = Collections.synchronizedList(new ArrayList<>());
 
     private ServerSocket serverSocket;
@@ -79,20 +80,26 @@ public class NodeProcess implements Runnable {
         switch (message.getType()) {
             case SEARCH:
 
+                // Indicativo de que o arquivo não foi encontrado na rede
                 if(message.getOriginNodeId().equals(this.id)) {
                     log("Busca retornou ao nó de origem P" + this.id + ". Arquivo '" + message.getPayload() + "' não encontrado na rede.");
                     return;
                 }
 
+                // Indica que o arquivo foi encontrado localment
                 String fileName = message.getPayload();
                 if (isResponsable(fileName)) {
                     log("Arquivo '" + fileName + "' encontrado localmente. Enviando resposta.");
+
+                    // Muda a mensagem para FOUND e define o destino como o nó de origem
                     MessageEntity foundMessage = new MessageEntity(
                             MessageType.FOUND,
                             this.id,
                             message.getOriginNodeId(),
                             fileName
                     );
+
+                    // Envia a mensagem de volta para o nó de origem
                     sendMessageToSuccessor(foundMessage);
                 } else {
                     log("Arquivo '" + fileName + "' não encontrado localmente. Encaminhando busca.");
@@ -113,6 +120,7 @@ public class NodeProcess implements Runnable {
 
     }
 
+    // Força uma exception no while(true) do servidor para encerrá-lo
     public void shutdown() {
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {

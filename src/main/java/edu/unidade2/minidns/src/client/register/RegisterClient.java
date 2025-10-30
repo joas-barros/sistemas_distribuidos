@@ -66,11 +66,13 @@ public class RegisterClient {
     }
 
     private void handleServerRequest() throws IOException {
+        // Solicitar o nome do servidor e o novo endereço IP ao usuário
         System.out.print("Digite o nome do servidor a ser registrado: ");
         String serverName = sc.nextLine();
         System.out.print("Digite o endereço IP do servidor: ");
         String serverIP = sc.nextLine();
 
+        // Construir a mensagem de registro
         String registrationMessage = "UPDATE:" + serverName + ":" + serverIP;
         byte[] sendData = registrationMessage.getBytes();
 

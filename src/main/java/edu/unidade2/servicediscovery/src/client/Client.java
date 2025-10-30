@@ -19,10 +19,12 @@ public class Client {
 
     private void run() {
         try {
+            // tenta a conecção com o servidor diretorio
             inet = InetAddress.getByName(ip);
             socket = new Socket(inet, porta);
             System.out.println("Conectado ao servidor de diretorio: " + socket.getInetAddress().getHostAddress());
 
+            // cria uma nova thread após conectar-se ao servidor diretorio
             ThreadClient threadClient = new ThreadClient(socket);
 
             Thread thread = new Thread(threadClient);

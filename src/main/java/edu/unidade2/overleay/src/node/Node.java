@@ -25,6 +25,8 @@ public class Node {
     }
 
     private void run() {
+
+        // Inicia o processo do nó em uma nova thread
         NodeProcess process = new NodeProcess(
                 id,
                 port,
@@ -33,6 +35,7 @@ public class Node {
                 generateFiles()
         );
 
+        // Inicia o processo em uma nova thread
         Thread thread = new Thread(process);
         thread.start();
 
@@ -41,6 +44,7 @@ public class Node {
 
         Scanner keyboard = new Scanner(System.in);
 
+        // Loop principal para ler comandos do usuário
         boolean exit = false;
         while (!exit) {
             String input = keyboard.nextLine();
@@ -58,6 +62,7 @@ public class Node {
         keyboard.close();
     }
 
+    // Gera a lista de arquivos que este nó é responsável por armazenar
     private List<String> generateFiles() {
         List<String> files = new ArrayList<>();
         for (int i = initialFile; i <= lastFile; i++) {

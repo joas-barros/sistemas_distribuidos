@@ -22,14 +22,17 @@ public class MiniDNSServer {
         try (DatagramSocket serverSocket = new DatagramSocket(port)) {
             host = InetAddress.getLocalHost();
             System.out.println("Servidor MiniDNS está rodando no endereço: " + host + ":" + port);
+            // Inicializa o mapa DNS com servidores e seus IPs
             initServer();
 
             while (true) {
                 byte[] receiveBuffer = new byte[1024];
 
+                // Recebe o pacote do cliente
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 serverSocket.receive(receivePacket);
 
+                // Processa a requisição
                 String request = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
@@ -37,6 +40,7 @@ public class MiniDNSServer {
 
                 String response = "";
 
+                // Verifica o tipo de requisição
                 if(request.startsWith("UPDATE:")){
                     String[] parts = request.split(":");
 
@@ -55,6 +59,7 @@ public class MiniDNSServer {
                     response = dnsMap.getOrDefault(serverName, "Servidor não encontrado");
                 }
 
+                // Envia a resposta de volta ao cliente
                 byte[] sendBuffer = response.getBytes();
                 DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
                 serverSocket.send(sendPacket);
@@ -62,7 +67,7 @@ public class MiniDNSServer {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Erro no servidor MiniDNS: " + e.getMessage());
         } finally {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
