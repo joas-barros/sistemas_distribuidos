@@ -1,7 +1,7 @@
-package edu.unidade2.servicediscovery.client;
+package edu.unidade2.servicediscovery.src.client;
 
-import edu.unidade2.servicediscovery.entities.Calculation;
-import edu.unidade2.servicediscovery.entities.Operation;
+import edu.unidade2.servicediscovery.src.entities.Calculation;
+import edu.unidade2.servicediscovery.src.entities.Operation;
 
 import java.io.*;
 import java.net.Socket;

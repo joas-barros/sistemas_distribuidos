@@ -1,6 +1,6 @@
-package edu.unidade2.servicediscovery.server;
+package edu.unidade2.servicediscovery.src.server;
 
-import edu.unidade2.servicediscovery.server.proxy.DirectoryServer;
+import edu.unidade2.servicediscovery.src.server.proxy.DirectoryServer;
 
 import java.io.PrintStream;
 import java.net.ServerSocket;

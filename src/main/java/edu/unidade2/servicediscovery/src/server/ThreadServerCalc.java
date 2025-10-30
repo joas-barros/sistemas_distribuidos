@@ -1,6 +1,6 @@
-package edu.unidade2.servicediscovery.server;
+package edu.unidade2.servicediscovery.src.server;
 
-import edu.unidade2.servicediscovery.entities.Calculation;
+import edu.unidade2.servicediscovery.src.entities.Calculation;
 
 import java.io.ObjectInputStream;
 import java.io.PrintStream;

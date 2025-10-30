@@ -1,4 +1,4 @@
-package edu.unidade2.servicediscovery.server.proxy;
+package edu.unidade2.servicediscovery.src.server.proxy;
 
 import java.net.ServerSocket;
 import java.net.Socket;

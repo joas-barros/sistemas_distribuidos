@@ -1,4 +1,4 @@
-package edu.unidade2.servicediscovery.client;
+package edu.unidade2.servicediscovery.src.client;
 
 import java.io.IOException;
 import java.net.InetAddress;
