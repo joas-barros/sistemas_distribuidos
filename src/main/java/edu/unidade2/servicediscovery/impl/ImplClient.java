@@ -4,7 +4,7 @@ import edu.unidade2.servicediscovery.src.client.Client;
 import edu.unidade2.servicediscovery.src.server.proxy.DirectoryServer;
 
 public class ImplClient {
-    static void main() {
+    public static void main(String [] args) {
         new Client("localhost", DirectoryServer.BASE_PORT);
     }
 }
