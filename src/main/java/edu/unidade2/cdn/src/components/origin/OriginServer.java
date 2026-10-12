@@ -24,13 +24,13 @@ public class OriginServer {
         this.edgeIp = edgeIp;
         this.edgeControlPort = edgeControlPort;
         this.port = port;
-        start("resources/livros.csv");
+        start("src/main/java/edu/unidade2/cdn/src/components/origin/resources/livros.csv");
     }
 
     public void start(String caminhoArquivo) {
         carregarBancodeDados(caminhoArquivo);
-        iniciarServidorTCP();
         iniciarTerminalAdmin();
+        iniciarServidorTCP();
     }
 
     private void carregarBancodeDados(String caminhoArquivo) {
@@ -52,7 +52,7 @@ public class OriginServer {
                             id,
                             dados[1].trim(),
                             dados[2].trim(),
-                            Integer.parseInt(dados[3].trim()),
+                            dados[3].trim(),
                             dados[4].trim()
                     );
                     database.put("/" + id, livro);

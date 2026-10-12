@@ -24,7 +24,7 @@ public class EdgeServer {
     private final int controlPort;
 
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
-    private static final long TTL_MILLIS = 10000;
+    private static final long TTL_MILLIS = 20000;
 
     public EdgeServer(String geoDnsIp, int geoDnsPort, String originIp, int originPort, String myIp, int clientPort, int controlPort) {
         this.geoDnsIp = geoDnsIp;
@@ -42,10 +42,7 @@ public class EdgeServer {
         System.out.println(Color.infoMessage("[EdgeServer] Iniciando Edge Server em " + myIp + " (Cliente: " + clientPort + ", Controle: " + controlPort + ")"));
 
         // 1. Registra o Shutdown Hook para saída graciosa
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println(Color.infoMessage("[EdgeServer] Encerrando Edge Server..."));
-            notifyGeoDns("UNREGISTER " + myIp + ":" + clientPort);
-        }));
+        shutdownGracefully();
 
         // 2. Registra o Edge no GeoDNS ao ligar
         notifyGeoDns("REGISTER " + myIp + ":" + clientPort);
@@ -54,6 +51,14 @@ public class EdgeServer {
         new Thread(this::listenForClients).start();
         new Thread(this::listenForOriginControl).start();
     }
+
+    private void shutdownGracefully() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println(Color.infoMessage("[EdgeServer] Encerrando Edge Server..."));
+            notifyGeoDns("UNREGISTER " + myIp + ":" + clientPort);
+        }));
+    }
+
 
     private void notifyGeoDns(String command) {
         try (Socket socket = new Socket(geoDnsIp, geoDnsPort);
@@ -110,6 +115,10 @@ public class EdgeServer {
                         System.out.println(Color.errorMessage("[EdgeServer] Arquivo " + caminhoArquivo + " não encontrado na Origem."));
                     }
                 }
+            } else {
+                System.out.println(Color.warningMessage("[EdgeServer] Requisição inválida recebida: " + requisicao));
+                EdgeResponse response = new EdgeResponse("400 Bad Request", "MISS", 0, "");
+                out.println(response.toJson());
             }
         } catch (Exception e) {
             System.out.println(Color.errorMessage("Erro ao processar requisição do cliente: " + e.getMessage()));

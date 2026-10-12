@@ -52,6 +52,8 @@ public class GeoDNS {
                         requestPacket.getAddress(), requestPacket.getPort()
                 );
                 udpSocket.send(responsePacket);
+
+                System.out.println(Color.successMessage("[GeoDNS] Respondido ao cliente: " + responseStr));
             }
         } catch (Exception e) {
             System.out.println(Color.errorMessage("[GeoDNS] Erro ao escutar clientes UDP: " + e.getMessage()));
@@ -81,7 +83,7 @@ public class GeoDNS {
                         activeEdges.add(edgeIp);
                         System.out.println(Color.successMessage("[GeoDNS] Edge Server registrado: " + edgeIp));
                     }
-                } else if (command.startsWith("UNRGISTER ")) {
+                } else if (command.startsWith("UNREGISTER ")) {
                     String edgeIp = command.substring(11).trim();
                     activeEdges.remove(edgeIp);
                     System.out.println(Color.warningMessage("[GeoDNS] Edge Server removido: " + edgeIp));

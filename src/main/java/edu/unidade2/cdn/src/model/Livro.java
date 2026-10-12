@@ -4,7 +4,7 @@ public record Livro(
         String id,
         String nome,
         String autor,
-        int lancamento,
+        String lancamento,
         String descricao
 ) {
     public String toJson() {
@@ -13,7 +13,7 @@ public record Livro(
                         "  \"id\": \"%s\",\n" +
                         "  \"nome\": \"%s\",\n" +
                         "  \"autor\": \"%s\",\n" +
-                        "  \"lancamento\": %d,\n" +
+                        "  \"lancamento\": %s,\n" +
                         "  \"descricao\": \"%s\"\n" +
                         "}",
                 id, nome, autor, lancamento, descricao
