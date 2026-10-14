@@ -3,8 +3,10 @@ package edu.unidade2.security.crypto;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 public class AsymmetricCipher {
@@ -13,11 +15,19 @@ public class AsymmetricCipher {
     private static final String ALGORITMO_AES = "AES";
     private static final String ALGORITMO_HMAC = "HmacSHA256";
 
-    public static String cifrarChaveComRSA(SecretKey chaveSessao, PublicKey chavePublicaDestino) throws Exception {
-        Cipher cifra = Cipher.getInstance(ALGORITMO_RSA);
-        cifra.init(Cipher.ENCRYPT_MODE, chavePublicaDestino);
-        byte[] chaveCifrada = cifra.doFinal(chaveSessao.getEncoded());
-        return Base64.getEncoder().encodeToString(chaveCifrada);
+    public static String cifrarComRSA(byte[] dados, String chavePublicaBase64) throws Exception {
+        // Reconstrói a chave pública a partir da string Base64
+        byte[] chaveBytes = Base64.getDecoder().decode(chavePublicaBase64);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(chaveBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey chavePublica = keyFactory.generatePublic(keySpec);
+
+        // Cifra os dados
+        Cipher cifra = Cipher.getInstance("RSA");
+        cifra.init(Cipher.ENCRYPT_MODE, chavePublica);
+        byte[] dadosCifrados = cifra.doFinal(dados);
+
+        return Base64.getEncoder().encodeToString(dadosCifrados);
     }
 
     public static SecretKey decifrarChaveAESComRSA(String chaveCifradaBase64, PrivateKey chavePrivada) throws Exception {

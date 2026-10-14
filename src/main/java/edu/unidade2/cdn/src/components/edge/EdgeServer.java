@@ -2,6 +2,7 @@ package edu.unidade2.cdn.src.components.edge;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.EdgeResponse;
+import edu.unidade2.security.model.SessionKeys;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

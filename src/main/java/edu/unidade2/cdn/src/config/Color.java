@@ -52,4 +52,10 @@ public class Color {
     public static String highlight(String text) {
         return HIGHLIGHT + text + RESET;
     }
+
+    public static String securityMessage(String message) {
+        String ANSI_PURPLE = "\u001B[35m";
+        String ANSI_RESET = "\u001B[0m";
+        return ANSI_PURPLE + "[SECURITY ALERT] " + message + ANSI_RESET;
+    }
 }
