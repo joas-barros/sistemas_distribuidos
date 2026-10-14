@@ -15,6 +15,8 @@ public class HandshakeHandler {
     public static SessionKeys realizarComoServidor(BufferedReader in, PrintWriter out, KeyPair rsaKeyPair) throws Exception {
         // 1. Envia a Chave Pública para o cliente
         String chavePublicaBase64 = Base64.getEncoder().encodeToString(rsaKeyPair.getPublic().getEncoded());
+        out.println(chavePublicaBase64);
+        out.flush();
 
         // 2. Recebe as chaves AES e HMAC geradas pelo cliente e cifradas com a Pública
         String chavesCifradas = in.readLine();
@@ -44,6 +46,7 @@ public class HandshakeHandler {
 
         // 4. Envia as chaves cifradas para o servidor
         out.println(aesCifrada + ":" + hmacCifrada);
+        out.flush();
 
         return new SessionKeys(aes, hmac);
     }

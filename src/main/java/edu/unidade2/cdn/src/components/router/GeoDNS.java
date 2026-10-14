@@ -45,8 +45,8 @@ public class GeoDNS {
             System.exit(1);
         }
 
-        new Thread(this::listenForClientsUDP).start();
         new Thread(this::listenForEdgesTCP).start();
+        new Thread(this::listenForClientsUDP).start();
     }
 
     private void listenForClientsUDP() {
@@ -151,7 +151,10 @@ public class GeoDNS {
             } else {
                 System.out.println(Color.errorMessage("[GeoDNS] Comando desconhecido do Edge Server: " + command));
             }
-        } catch (Exception e) {
+        } catch (SecurityException e) {
+            System.out.println(Color.securityMessage("[GeoDNS] Violação de segurança na conexão do Edge Server: " + e.getMessage()));
+        }
+        catch (Exception e) {
             System.out.println(Color.errorMessage("[GeoDNS] Erro ao lidar com conexão do Edge Server: " + e.getMessage()));
         }
     }

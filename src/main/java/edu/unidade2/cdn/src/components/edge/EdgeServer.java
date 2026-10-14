@@ -69,6 +69,7 @@ public class EdgeServer {
     }
 
     private void shutdownGracefully() {
+        System.out.println(Color.infoMessage("[EdgeServer] Registrando Shutdown Hook para saída graciosa..."));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println(Color.infoMessage("[EdgeServer] Encerrando Edge Server..."));
             notifyGeoDns("UNREGISTER " + myIp + ":" + clientPort);
