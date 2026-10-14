@@ -1,14 +1,18 @@
 package edu.unidade2.cdn.src.components.client;
 
 import edu.unidade2.cdn.src.config.Color;
+import edu.unidade2.security.SecureMessageFacade;
+import edu.unidade2.security.handler.HandshakeHandler;
+import edu.unidade2.security.handler.UdpSecurityHandler;
+import edu.unidade2.security.model.SessionKeys;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.security.PublicKey;
 import java.util.Scanner;
 
 public class Cliente {
@@ -71,20 +75,34 @@ public class Cliente {
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
             ) {
-                // Envia requisição ao Edge
-                out.println("GET " + filename);
+                System.out.println(Color.infoMessage("[Cliente] Conectado ao Edge. Iniciando Handshake RSA..."));
 
-                // Lê a resposta JSON do Edge
-                System.out.println(Color.infoMessage("[Cliente] Aguardando resposta do Edge " + cachedEdgeAddress + "..."));
+                // 1. HANDSHAKE SEGURO
+                SessionKeys keys = HandshakeHandler.realizarComoCliente(in, out);
 
-                StringBuilder respostaJson = new StringBuilder();
-                String linha;
-                while ((linha = in.readLine()) != null) {
-                    respostaJson.append(linha).append("\n");
+                // 2. ENVIO CIFRADO
+                String comando = "GET " + filename;
+                String pacoteRequisicao = SecureMessageFacade.empacotarMensagem(comando, keys.aes(), keys.hmac());
+                out.println(pacoteRequisicao);
+
+                System.out.println(Color.infoMessage("[Cliente] Aguardando resposta segura do Edge " + cachedEdgeAddress + "..."));
+
+                // 3. RECEPÇÃO E DECIFRAGEM
+                String pacoteResposta = in.readLine();
+
+                if (pacoteResposta != null) {
+                    String respostaJson = SecureMessageFacade.desempacotarMensagem(pacoteResposta, keys.aes(), keys.hmac());
+
+                    if (respostaJson.equals("Erro na entrada de dados. Tente outra vez!")) {
+                        System.out.println(respostaJson);
+                    } else {
+                        exibirTabelaFormatada(respostaJson);
+                    }
                 }
-
-                exibirTabelaFormatada(respostaJson.toString());
                 break;
+            } catch (SecurityException se) {
+                System.out.println(Color.securityMessage("Integridade comprometida ao falar com o Edge: " + se.getMessage()));
+                cachedEdgeAddress = null;
             } catch (Exception e) {
                 System.out.println(Color.errorMessage("[Falha] Erro ao ligar ao Edge " + cachedEdgeAddress + ": " + e.getMessage()));
                 cachedEdgeAddress = null;
@@ -142,26 +160,27 @@ public class Cliente {
     private void resolverEdgeNoGeoDNS(String filename) {
         try (DatagramSocket udpSocket = new DatagramSocket()) {
             InetAddress geoDnsAddress = InetAddress.getByName(geoDnsIp);
+            udpSocket.setSoTimeout(2000);
 
-            // Pergunta ao GeoDNS onde encontrar o arquivo
+            System.out.println(Color.infoMessage("[Cliente] Solicitando chave pública do GeoDNS..."));
+
+            // 1. OBTENÇÃO DA CHAVE PÚBLICA
+            PublicKey pubKey = UdpSecurityHandler.solicitarChavePublica(udpSocket, geoDnsAddress, geoDnsPort);
+
+            System.out.println(Color.infoMessage("[Cliente] Consultando GeoDNS de forma segura..."));
+
+            // 2. CONSULTA PROTEGIDA
             String mensagem = "WHERE " + filename;
-            byte[] sendData = mensagem.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, geoDnsAddress, geoDnsPort);
-            udpSocket.send(sendPacket);
+            String resposta = UdpSecurityHandler.enviarEReceberSeguro(udpSocket, geoDnsAddress, geoDnsPort, mensagem, pubKey);
 
-            // Aguarda a resposta com o IP:PORT do Edge
-            byte[] receiveData = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            udpSocket.setSoTimeout(2000); // Timeout de 2 segundos para não ficar bloqueado
-            udpSocket.receive(receivePacket);
-
-            String resposta = new String(receivePacket.getData(), 0, receivePacket.getLength()).trim();
-            if (resposta.startsWith("ERROR")) {
+            if (resposta.startsWith("ERROR") || resposta.equals("Erro na entrada de dados. Tente outra vez!")) {
                 System.out.println(Color.errorMessage("[GeoDNS] " + resposta));
             } else {
                 System.out.println(Color.successMessage("[DNS Cache] Novo Edge Server resolvido: " + resposta));
                 this.cachedEdgeAddress = resposta;
             }
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("Falha de segurança na consulta UDP: " + se.getMessage()));
         } catch (Exception e) {
             System.out.println(Color.errorMessage("Erro ao consultar o GeoDNS via UDP: " + e.getMessage()));
         }
