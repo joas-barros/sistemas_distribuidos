@@ -43,4 +43,10 @@ public class AsymmetricCipher {
         byte[] chaveDecifrada = cifra.doFinal(Base64.getDecoder().decode(chaveCifradaBase64));
         return new SecretKeySpec(chaveDecifrada, ALGORITMO_HMAC);
     }
+
+    public static java.security.PublicKey getPublicKeyFromBase64(String chavePublicaBase64) throws Exception {
+        byte[] chaveBytes = Base64.getDecoder().decode(chavePublicaBase64);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(chaveBytes);
+        return KeyFactory.getInstance(ALGORITMO_RSA).generatePublic(keySpec);
+    }
 }

@@ -2,7 +2,7 @@ package edu.unidade2.cdn.src.components.edge;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.EdgeResponse;
-import edu.unidade2.security.HandshakeHandler;
+import edu.unidade2.security.handler.HandshakeHandler;
 import edu.unidade2.security.SecureMessageFacade;
 import edu.unidade2.security.keys.KeyGeneratorUtil;
 import edu.unidade2.security.model.SessionKeys;

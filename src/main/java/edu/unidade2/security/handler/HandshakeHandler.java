@@ -1,7 +1,6 @@
-package edu.unidade2.security;
+package edu.unidade2.security.handler;
 
 import edu.unidade2.security.crypto.AsymmetricCipher;
-import edu.unidade2.security.crypto.SymmetricCipher;
 import edu.unidade2.security.keys.KeyGeneratorUtil;
 import edu.unidade2.security.model.SessionKeys;
 

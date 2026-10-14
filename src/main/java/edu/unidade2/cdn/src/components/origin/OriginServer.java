@@ -2,8 +2,9 @@ package edu.unidade2.cdn.src.components.origin;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.Livro;
-import edu.unidade2.security.HandshakeHandler;
+import edu.unidade2.security.handler.HandshakeHandler;
 import edu.unidade2.security.SecureMessageFacade;
+import edu.unidade2.security.keys.KeyGeneratorUtil;
 import edu.unidade2.security.model.SessionKeys;
 
 import java.io.BufferedReader;
@@ -34,6 +35,14 @@ public class OriginServer {
     }
 
     public void start(String caminhoArquivo) {
+        try {
+            System.out.println(Color.infoMessage("[OriginServer] Gerando chaves RSA..."));
+            this.rsaKeyPair = KeyGeneratorUtil.gerarParRSA();
+        } catch (Exception e) {
+            System.out.println(Color.securityMessage("Erro fatal ao gerar chaves RSA: " + e.getMessage()));
+            System.exit(1);
+        }
+
         carregarBancodeDados(caminhoArquivo);
         iniciarTerminalAdmin();
         iniciarServidorTCP();
