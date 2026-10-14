@@ -2,6 +2,9 @@ package edu.unidade2.cdn.src.components.edge;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.EdgeResponse;
+import edu.unidade2.security.HandshakeHandler;
+import edu.unidade2.security.SecureMessageFacade;
+import edu.unidade2.security.keys.KeyGeneratorUtil;
 import edu.unidade2.security.model.SessionKeys;
 
 import java.io.BufferedReader;
@@ -9,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,6 +31,8 @@ public class EdgeServer {
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private static final long TTL_MILLIS = 20000;
 
+    private KeyPair rsaKeyPair;
+
     public EdgeServer(String geoDnsIp, int geoDnsPort, String originIp, int originPort, String myIp, int clientPort, int controlPort) {
         this.geoDnsIp = geoDnsIp;
         this.geoDnsPort = geoDnsPort;
@@ -41,6 +47,15 @@ public class EdgeServer {
 
     public void start(){
         System.out.println(Color.infoMessage("[EdgeServer] Iniciando Edge Server em " + myIp + " (Cliente: " + clientPort + ", Controle: " + controlPort + ")"));
+
+        // 0 - Gera o par de chaves RSA para comunicação segura
+        try {
+            System.out.println(Color.infoMessage("[EdgeServer] Gerando chaves RSA..."));
+            this.rsaKeyPair = KeyGeneratorUtil.gerarParRSA();
+        } catch (Exception e) {
+            System.out.println(Color.securityMessage("Erro fatal ao gerar chaves RSA: " + e.getMessage()));
+            System.exit(1);
+        }
 
         // 1. Registra o Shutdown Hook para saída graciosa
         shutdownGracefully();
@@ -63,9 +78,18 @@ public class EdgeServer {
 
     private void notifyGeoDns(String command) {
         try (Socket socket = new Socket(geoDnsIp, geoDnsPort);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-            out.println(command);
-            System.out.println(Color.successMessage("[EdgeServer] Comando enviado para GeoDNS: " + command));
+
+            SessionKeys keys = HandshakeHandler.realizarComoCliente(in, out);
+
+            String pacoteComando = SecureMessageFacade.empacotarMensagem(command, keys.aes(), keys.hmac());
+            out.println(pacoteComando);
+
+            System.out.println(Color.successMessage("[EdgeServer] Comando seguro enviado para GeoDNS: " + command));
+
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[EdgeServer] Falha de segurança ao notificar GeoDNS: " + se.getMessage()));
         } catch (Exception e) {
             System.out.println(Color.errorMessage("[EdgeServer] Erro ao enviar comando para GeoDNS: " + e.getMessage()));
         }
@@ -88,60 +112,67 @@ public class EdgeServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            String requisicao = in.readLine();
+            SessionKeys keys = HandshakeHandler.realizarComoServidor(in, out, rsaKeyPair);
 
-            if(requisicao != null && requisicao.startsWith("GET ")) {
-                String caminhoArquivo = requisicao.split(" ")[1];
-                CacheEntry entry = cache.get(caminhoArquivo);
+            String pacoteRequisicao = in.readLine();
+            if (pacoteRequisicao == null) return;
 
-                if (entry != null && (System.currentTimeMillis() - entry.timestamp() < TTL_MILLIS)) {
-                    System.out.println(Color.infoMessage("[EdgeServer] Cache HIT para " + caminhoArquivo));
+            String requisicao = SecureMessageFacade.desempacotarMensagem(pacoteRequisicao, keys.aes(), keys.hmac());
 
-                    EdgeResponse response = new EdgeResponse("200 OK", "HIT", entry.data().length(), entry.data());
-                    out.println(response.toJson());
-                } else {
-                    System.out.println(Color.infoMessage("[EdgeServer] Cache MISS para " + caminhoArquivo));
-
-                    String dataFromOrigin = fetchFromOrigin(caminhoArquivo);
-
-                    if (!dataFromOrigin.isEmpty()) {
-                        cache.put(caminhoArquivo, new CacheEntry(dataFromOrigin, System.currentTimeMillis()));
-
-                        EdgeResponse response = new EdgeResponse("200 OK", "MISS", dataFromOrigin.length(), dataFromOrigin);
-                        out.println(response.toJson());
-                        System.out.println(Color.successMessage("[EdgeServer] Arquivo " + caminhoArquivo + " armazenado no cache."));
-                    } else {
-                        EdgeResponse response = new EdgeResponse("404 Not Found", "MISS", 0, "");
-                        out.println(response.toJson());
-                        System.out.println(Color.errorMessage("[EdgeServer] Arquivo " + caminhoArquivo + " não encontrado na Origem."));
-                    }
-                }
-            } else {
+            if (!requisicao.startsWith("GET ") || !requisicao.split(" ")[1].matches("^/arquivo\\d+\\.ext$")) {
                 System.out.println(Color.warningMessage("[EdgeServer] Requisição inválida recebida: " + requisicao));
                 EdgeResponse response = new EdgeResponse("400 Bad Request", "MISS", 0, "");
-                out.println(response.toJson());
+                out.println(SecureMessageFacade.empacotarMensagem(response.toJson(), keys.aes(), keys.hmac()));
+                return;
+            }
+
+            String caminhoArquivo = requisicao.split(" ")[1];
+            CacheEntry entry = cache.get(caminhoArquivo);
+
+            if (entry != null && (System.currentTimeMillis() - entry.timestamp() < TTL_MILLIS)) {
+                System.out.println("[Edge] Cache HIT Seguro para " + caminhoArquivo);
+                EdgeResponse response = new EdgeResponse("200 OK", "HIT", entry.data().length(), entry.data());
+                out.println(SecureMessageFacade.empacotarMensagem(response.toJson(), keys.aes(), keys.hmac()));
+            } else {
+                System.out.println("[Edge] Cache MISS Seguro para " + caminhoArquivo);
+
+                // Busca na origem usando canal seguro
+                String dataFromOrigin = fetchFromOriginSecure(caminhoArquivo);
+
+                if (dataFromOrigin != null && !dataFromOrigin.isEmpty()) {
+                    cache.put(caminhoArquivo, new CacheEntry(dataFromOrigin, System.currentTimeMillis()));
+                    EdgeResponse response = new EdgeResponse("200 OK", "MISS", dataFromOrigin.length(), dataFromOrigin);
+                    out.println(SecureMessageFacade.empacotarMensagem(response.toJson(), keys.aes(), keys.hmac()));
+                } else {
+                    EdgeResponse response = new EdgeResponse("404 Not Found", "MISS", 0, "");
+                    out.println(SecureMessageFacade.empacotarMensagem(response.toJson(), keys.aes(), keys.hmac()));
+                }
             }
         } catch (Exception e) {
             System.out.println(Color.errorMessage("Erro ao processar requisição do cliente: " + e.getMessage()));
         }
     }
 
-    private String fetchFromOrigin(String caminhoArquivo) {
-        try (Socket originSocket = new Socket(originIp, originPort);
-             PrintWriter out = new PrintWriter(originSocket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(originSocket.getInputStream()))) {
+    private String fetchFromOriginSecure(String caminhoArquivo) {
+        try (Socket socket = new Socket(originIp, originPort);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            out.println("GET " + caminhoArquivo);
-            StringBuilder responseBuilder = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                responseBuilder.append(line).append("\n");
+            SessionKeys keys = HandshakeHandler.realizarComoCliente(in, out);
+
+            String requisicao = "GET " + caminhoArquivo;
+            out.println(SecureMessageFacade.empacotarMensagem(requisicao, keys.aes(), keys.hmac()));
+
+            String pacoteResposta = in.readLine();
+            if (pacoteResposta != null) {
+                return SecureMessageFacade.desempacotarMensagem(pacoteResposta, keys.aes(), keys.hmac());
             }
-            return responseBuilder.toString().trim();
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[EdgeServer] Falha de integridade ao buscar na Origem."));
         } catch (Exception e) {
-            System.out.println(Color.errorMessage("[EdgeServer] Erro ao buscar arquivo da Origem: " + e.getMessage()));
-            return "";
+            System.out.println(Color.errorMessage("[EdgeServer] Erro ao buscar da origem: " + e.getMessage()));
         }
+        return "";
     }
 
     private void listenForOriginControl() {
@@ -157,13 +188,23 @@ public class EdgeServer {
     }
 
     private void processControlCommand(Socket socket) {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-            String command = in.readLine();
-            if (command != null && command.startsWith("INVALIDATE ")) {
-                String caminhoArquivo = command.split(" ")[1];
-                cache.remove(caminhoArquivo);
-                System.out.println(Color.successMessage("[EdgeServer] Cache de " + caminhoArquivo + " invalidado por comando da Origem."));
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+        ) {
+
+            SessionKeys keys = HandshakeHandler.realizarComoServidor(in, out, rsaKeyPair);
+
+            String pacoteComando = in.readLine();
+            if (pacoteComando != null) {
+                String comando = SecureMessageFacade.desempacotarMensagem(pacoteComando, keys.aes(), keys.hmac());
+                if (comando.startsWith("INVALIDATE ")) {
+                    String caminhoArquivo = comando.split(" ")[1];
+                    cache.remove(caminhoArquivo);
+                    System.out.println(Color.warningMessage("[EdgeServer] Cache INVALIDADO com segurança para: " + caminhoArquivo));
+                }
             }
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[EdgeServer] Comando de controle rejeitado: " + se.getMessage()));
         } catch (Exception e) {
             System.out.println(Color.errorMessage("Erro ao processar comando de controle: " + e.getMessage()));
         }

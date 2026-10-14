@@ -30,7 +30,7 @@ public class HandshakeHandler {
         return new SessionKeys(aes, hmac);
     }
 
-    public static SessionKeys realizarComoCliente(BufferedReader in, PrintWriter out, KeyPair rsaKeyPair) throws Exception {
+    public static SessionKeys realizarComoCliente(BufferedReader in, PrintWriter out) throws Exception {
         // 1. Recebe a Chave Pública do servidor
         String chavePublicaBase64 = in.readLine();
         if (chavePublicaBase64 == null) throw new SecurityException("Falha no Handshake: Conexão interrompida.");

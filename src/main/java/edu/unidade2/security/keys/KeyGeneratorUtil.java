@@ -12,7 +12,7 @@ public class KeyGeneratorUtil {
     private static final String ALGORITMO_AES = "AES";
     private static final String ALGORITMO_HMAC = "HmacSHA256";
 
-    public static KeyPair gerarParChavesRSA() throws NoSuchAlgorithmException {
+    public static KeyPair gerarParRSA() throws NoSuchAlgorithmException {
         KeyPairGenerator gerador = KeyPairGenerator.getInstance(ALGORITMO_RSA);
         gerador.initialize(2048);
         return gerador.generateKeyPair();
