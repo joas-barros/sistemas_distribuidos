@@ -2,11 +2,10 @@ package edu.unidade2.cdn.src.components.origin;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.Livro;
+import edu.unidade2.security.HandshakeHandler;
 import edu.unidade2.security.SecureMessageFacade;
-import edu.unidade2.security.crypto.AsymmetricCipher;
-import edu.unidade2.security.keys.KeyGeneratorUtil;
+import edu.unidade2.security.model.SessionKeys;
 
-import javax.crypto.SecretKey;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
@@ -14,7 +13,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyPair;
-import java.util.Base64;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,23 +90,14 @@ public class OriginServer {
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            // Como a Origem atua como cliente neste caso, ela recebe a Pública do Edge
-            String chavePublicaBase64 = in.readLine();
+            SessionKeys keys = HandshakeHandler.realizarComoCliente(in, out);
 
-            // Gera chaves temporárias para a sessão
-            SecretKey chaveAES = KeyGeneratorUtil.gerarChaveAES();
-            SecretKey chaveHMAC = KeyGeneratorUtil.gerarChaveHMAC();
-
-            // Cifra e envia as chaves
-            String aesCifrada = AsymmetricCipher.cifrarComRSA(chaveAES.getEncoded(), chavePublicaBase64);
-            String hmacCifrado = AsymmetricCipher.cifrarComRSA(chaveHMAC.getEncoded(), chavePublicaBase64);
-            out.println(aesCifrada + ":" + hmacCifrado);
-
-            // Envia o comando cifrado e assinado
-            String pacoteComando = SecureMessageFacade.empacotarMensagem(comando, chaveAES, chaveHMAC);
+            String pacoteComando = SecureMessageFacade.empacotarMensagem(comando, keys.aes(), keys.hmac());
             out.println(pacoteComando);
 
             System.out.println(Color.successMessage("[OriginServer] Comando de invalidação enviado para a borda: " + caminhoArquivo));
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[OriginServer] Falha de segurança ao notificar Edge: " + se.getMessage()));
         } catch (Exception e) {
             System.out.println(Color.errorMessage("[OriginServer] Erro ao enviar comando de invalidação: " + e.getMessage()));
         }
@@ -132,36 +121,12 @@ public class OriginServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            // HANDSHAKE RSA
+            SessionKeys keys = HandshakeHandler.realizarComoServidor(in, out, rsaKeyPair);
 
-            // Envio da chave pública para o edge
-            String chavePublicaStr = Base64.getEncoder().encodeToString(rsaKeyPair.getPublic().getEncoded());
-            out.println(chavePublicaStr);
-
-            // Aguarda o Edge enviar as chaves cifradas "AES:HMAC"
-            String chavesCifradas = in.readLine();
-            if (chavesCifradas == null) {;
-                System.out.println(Color.securityMessage("[OriginServer] Falha no handshake: chaves não recebidas."));
-                return;
-            }
-
-            String[] chavesPartes = chavesCifradas.split(":");
-            if (chavesPartes.length != 2) {
-                System.out.println(Color.securityMessage("[OriginServer] Falha no handshake: formato de chaves inválido."));
-                return;
-            }
-
-            SecretKey chaveAES = AsymmetricCipher.decifrarChaveAESComRSA(chavesPartes[0], rsaKeyPair.getPrivate());
-            SecretKey chaveHMAC = AsymmetricCipher.decifrarChaveHMACComRSA(chavesPartes[1], rsaKeyPair.getPrivate());
-
-            // RECEPÇÃO E DESEMPACOTAMENTO SEGURO
             String pacoteRequisicao = in.readLine();
-            if (pacoteRequisicao == null) {
-                System.out.println(Color.securityMessage("[OriginServer] Falha na recepção: pacote de requisição não recebido."));
-                return;
-            }
+            if (pacoteRequisicao == null) return;
 
-            String requisicao = SecureMessageFacade.desempacotarMensagem(pacoteRequisicao, chaveAES, chaveHMAC);
+            String requisicao = SecureMessageFacade.desempacotarMensagem(pacoteRequisicao, keys.aes(), keys.hmac());
 
             if (requisicao.startsWith("GET ")) {
                 String caminhoArquivo = requisicao.split(" ")[1];
@@ -169,12 +134,16 @@ public class OriginServer {
                 Livro livro = database.get(caminhoArquivo);
 
                 if (livro != null) {
-                    out.println(livro.toJson());
-                    System.out.println(Color.successMessage("[OriginServer] Requisição atendida para " + caminhoArquivo));
+                    String pacoteResposta = SecureMessageFacade.empacotarMensagem(livro.toJson(), keys.aes(), keys.hmac());
+                    out.println(pacoteResposta);
+                    System.out.println(Color.successMessage("[OriginServer] Requisição segura atendida para " + caminhoArquivo));
                 } else {
-                    out.println("");
+                    out.println(SecureMessageFacade.empacotarMensagem("", keys.aes(), keys.hmac()));
                     System.out.println(Color.warningMessage("[OriginServer] Arquivo não encontrado: " + caminhoArquivo));
                 }
+            } else {
+                System.out.println(Color.warningMessage("[OriginServer] Requisição inválida recebida: " + requisicao));
+                out.println(SecureMessageFacade.empacotarMensagem("", keys.aes(), keys.hmac()));
             }
         } catch (SecurityException se) {
             System.out.println(Color.securityMessage("[OriginServer] Erro de Segurança/HMAC Inválido. Conexão rejeitada."));
