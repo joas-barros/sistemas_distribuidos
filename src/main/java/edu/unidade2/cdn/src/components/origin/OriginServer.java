@@ -2,6 +2,10 @@ package edu.unidade2.cdn.src.components.origin;
 
 import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.cdn.src.model.Livro;
+import edu.unidade2.security.handler.HandshakeHandler;
+import edu.unidade2.security.SecureMessageFacade;
+import edu.unidade2.security.keys.KeyGeneratorUtil;
+import edu.unidade2.security.model.SessionKeys;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -9,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,6 +25,8 @@ public class OriginServer {
     private final String edgeIp;
     private final int edgeControlPort;
 
+    private KeyPair rsaKeyPair;
+
     public OriginServer(int port, String edgeIp, int edgeControlPort) {
         this.edgeIp = edgeIp;
         this.edgeControlPort = edgeControlPort;
@@ -28,6 +35,14 @@ public class OriginServer {
     }
 
     public void start(String caminhoArquivo) {
+        try {
+            System.out.println(Color.infoMessage("[OriginServer] Gerando chaves RSA..."));
+            this.rsaKeyPair = KeyGeneratorUtil.gerarParRSA();
+        } catch (Exception e) {
+            System.out.println(Color.securityMessage("Erro fatal ao gerar chaves RSA: " + e.getMessage()));
+            System.exit(1);
+        }
+
         carregarBancodeDados(caminhoArquivo);
         iniciarTerminalAdmin();
         iniciarServidorTCP();
@@ -81,9 +96,17 @@ public class OriginServer {
 
     private void dispararInvalidacao(String comando, String caminhoArquivo) {
         try (Socket socket = new Socket(edgeIp, edgeControlPort);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-            out.println(comando);
+
+            SessionKeys keys = HandshakeHandler.realizarComoCliente(in, out);
+
+            String pacoteComando = SecureMessageFacade.empacotarMensagem(comando, keys.aes(), keys.hmac());
+            out.println(pacoteComando);
+
             System.out.println(Color.successMessage("[OriginServer] Comando de invalidação enviado para a borda: " + caminhoArquivo));
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[OriginServer] Falha de segurança ao notificar Edge: " + se.getMessage()));
         } catch (Exception e) {
             System.out.println(Color.errorMessage("[OriginServer] Erro ao enviar comando de invalidação: " + e.getMessage()));
         }
@@ -107,22 +130,33 @@ public class OriginServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
         ) {
-            String requisicao = in.readLine();
+            SessionKeys keys = HandshakeHandler.realizarComoServidor(in, out, rsaKeyPair);
 
-            if (requisicao != null && requisicao.startsWith("GET ")) {
+            String pacoteRequisicao = in.readLine();
+            if (pacoteRequisicao == null) return;
+
+            String requisicao = SecureMessageFacade.desempacotarMensagem(pacoteRequisicao, keys.aes(), keys.hmac());
+
+            if (requisicao.startsWith("GET ")) {
                 String caminhoArquivo = requisicao.split(" ")[1];
 
                 Livro livro = database.get(caminhoArquivo);
 
                 if (livro != null) {
-                    out.println(livro.toJson());
-                    System.out.println(Color.successMessage("[OriginServer] Requisição atendida para " + caminhoArquivo));
+                    String pacoteResposta = SecureMessageFacade.empacotarMensagem(livro.toJson(), keys.aes(), keys.hmac());
+                    out.println(pacoteResposta);
+                    System.out.println(Color.successMessage("[OriginServer] Requisição segura atendida para " + caminhoArquivo));
                 } else {
-                    out.println("");
+                    out.println(SecureMessageFacade.empacotarMensagem("", keys.aes(), keys.hmac()));
                     System.out.println(Color.warningMessage("[OriginServer] Arquivo não encontrado: " + caminhoArquivo));
                 }
+            } else {
+                System.out.println(Color.warningMessage("[OriginServer] Requisição inválida recebida: " + requisicao));
+                out.println(SecureMessageFacade.empacotarMensagem("", keys.aes(), keys.hmac()));
             }
-        }catch (Exception e) {
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("[OriginServer] Erro de Segurança/HMAC Inválido. Conexão rejeitada."));
+        } catch (Exception e) {
             System.out.println(Color.errorMessage("Erro ao processar cliente: " + e.getMessage()));
         }
     }

@@ -1,9 +1,11 @@
 package edu.unidade2.minidns.src.client.requester;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
+import edu.unidade2.cdn.src.config.Color;
+import edu.unidade2.security.handler.UdpSecurityHandler;
+
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.security.PublicKey;
 import java.util.Scanner;
 
 public class RequesterClient {
@@ -61,26 +63,24 @@ public class RequesterClient {
         }
     }
 
-    private void handleServerRequest() throws IOException {
-        // Solicitar o nome do servidor ao usuário
-        System.out.println("Digite o nome do servidor a ser consultado: ");
+    private void handleServerRequest() {
+        System.out.print("Digite o nome do servidor a ser consultado: ");
         String serverName = sc.nextLine();
 
-        // Construir a mensagem de consulta
         String message = "GET:" + serverName;
-        byte[] sendData = message.getBytes();
 
-        // Enviar a mensagem ao servidor
-        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
-                adress, SERVER_PORT);
-        socketCliente.send(sendPacket);
-        System.out.println("Mensagem de consulta enviada: " + message);
+        try {
+            System.out.println(Color.infoMessage("[Cliente] Solicitando chave pública do MiniDNS..."));
+            PublicKey pubKey = UdpSecurityHandler.solicitarChavePublica(socketCliente, adress, SERVER_PORT);
 
-        // Receber a resposta do servidor
-        byte[] receiveData = new byte[1024];
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        socketCliente.receive(receivePacket);
-        String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
-        System.out.println("Resposta recebida: " + response);
+            System.out.println(Color.infoMessage("[Cliente] Enviando requisição cifrada e assinada (HMAC)..."));
+            String response = UdpSecurityHandler.enviarEReceberSeguro(socketCliente, adress, SERVER_PORT, message, pubKey);
+
+            System.out.println(Color.successMessage("Resposta Segura do servidor: " + response));
+        } catch (SecurityException se) {
+            System.out.println(Color.securityMessage("A comunicação foi abortada por falha de segurança/integridade."));
+        } catch (Exception e) {
+            System.out.println(Color.errorMessage("Erro na comunicação UDP: " + e.getMessage()));
+        }
     }
 }
