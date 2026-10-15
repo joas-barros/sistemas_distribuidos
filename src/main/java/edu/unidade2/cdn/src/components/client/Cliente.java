@@ -83,6 +83,8 @@ public class Cliente {
                 // 2. ENVIO CIFRADO
                 String comando = "GET " + filename;
                 String pacoteRequisicao = SecureMessageFacade.empacotarMensagem(comando, keys.aes(), keys.hmac());
+
+//                pacoteRequisicao = pacoteRequisicao.substring(0, pacoteRequisicao.length() - 1) + "X";
                 out.println(pacoteRequisicao);
 
                 System.out.println(Color.infoMessage("[Cliente] Aguardando resposta segura do Edge " + cachedEdgeAddress + "..."));

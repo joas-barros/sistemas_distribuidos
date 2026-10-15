@@ -1,7 +1,10 @@
 package edu.unidade2.overleay.src.node;
 
+import edu.unidade2.cdn.src.config.Color;
 import edu.unidade2.overleay.src.node.threads.NodeProcess;
+import edu.unidade2.security.keys.KeyGeneratorUtil;
 
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -14,6 +17,8 @@ public class Node {
     Integer initialFile;
     int lastFile;
 
+    private KeyPair rsaKeyPair;
+
     public Node(int id, int port, int successorPort, Integer previousPort, int initialFile, int lastFile) {
         this.id = id;
         this.port = port;
@@ -21,7 +26,20 @@ public class Node {
         this.previousPort = previousPort;
         this.initialFile = initialFile;
         this.lastFile = lastFile;
+
+        try {
+            System.out.println(Color.securityMessage("[P" + id  + "]" + " Gerando chaves RSA..."));
+            this.rsaKeyPair = KeyGeneratorUtil.gerarParRSA();
+        } catch (Exception e) {
+            System.out.println(Color.securityMessage("Erro fatal ao gerar chaves RSA: " + e.getMessage()));
+            System.exit(1);
+        }
+
         this.run();
+    }
+
+    public KeyPair getRsaKeyPair() {
+        return this.rsaKeyPair;
     }
 
     private void run() {
@@ -32,7 +50,8 @@ public class Node {
                 port,
                 previousPort,
                 successorPort,
-                generateFiles()
+                generateFiles(),
+                rsaKeyPair
         );
 
         // Inicia o processo em uma nova thread
