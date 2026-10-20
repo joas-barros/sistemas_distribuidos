@@ -32,13 +32,16 @@ public class NodeProcess implements Runnable {
 
     private ServerSocket serverSocket;
 
-    public NodeProcess(int id, int port, int previousNodePort, int successorNodePort, List<String> files, KeyPair rsaKeyPair) {
+    private boolean attackerMode;
+
+    public NodeProcess(int id, int port, int previousNodePort, int successorNodePort, List<String> files, KeyPair rsaKeyPair, boolean attackerMode) {
         this.id = id;
         this.port = port;
         this.previousNodePort = previousNodePort;
         this.successorNodePort = successorNodePort;
         this.files = files;
         this.rsaKeyPair = rsaKeyPair;
+        this.attackerMode = attackerMode;
     }
 
     private boolean isResponsable(String fileName) {
@@ -101,6 +104,12 @@ public class NodeProcess implements Runnable {
 
             String plainMsg = serializeMessage(message);
             String secureMsg = SecureMessageFacade.empacotarMensagem(plainMsg, keys.aes(), keys.hmac());
+
+            if (attackerMode) {
+                secureMsg = SecureMessageFacade.empacotarMensagem("MENSAGEM ALTERADA PELO ATACANTE", keys.aes(), keys.hmac());
+                log(Color.securityMessage("Modo atacante ativo: Mensagem alterada antes de enviar para o sucessor."));
+            }
+
             log(Color.securityMessage("Mensagem " + plainMsg + " empacotada como " + secureMsg + " e enviada para o sucessor na porta " + successorNodePort));
 
             out.println(secureMsg);

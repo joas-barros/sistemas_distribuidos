@@ -16,16 +16,18 @@ public class Node {
     Integer previousPort;
     Integer initialFile;
     int lastFile;
+    boolean attackerMode;
 
     private KeyPair rsaKeyPair;
 
-    public Node(int id, int port, int successorPort, Integer previousPort, int initialFile, int lastFile) {
+    public Node(int id, int port, int successorPort, Integer previousPort, int initialFile, int lastFile, boolean attackerMode) {
         this.id = id;
         this.port = port;
         this.successorPort = successorPort;
         this.previousPort = previousPort;
         this.initialFile = initialFile;
         this.lastFile = lastFile;
+        this.attackerMode = attackerMode;
 
         try {
             System.out.println(Color.securityMessage("[P" + id  + "]" + " Gerando chaves RSA..."));
@@ -51,7 +53,8 @@ public class Node {
                 previousPort,
                 successorPort,
                 generateFiles(),
-                rsaKeyPair
+                rsaKeyPair,
+                attackerMode
         );
 
         // Inicia o processo em uma nova thread
